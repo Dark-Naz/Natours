@@ -1,15 +1,18 @@
 // const fs = require('fs');
+const cors = require('cors');
 const path = require('path');
 const express = require('express');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
-const cors = require('cors');
 // const crypto = require('crypto');
 // const mongoSanitize = require('mongo-sanitize');
 // const domPurify = require('dompurify');
 const hpp = require('hpp');
+const pug = require('pug');
 const cookieParser = require('cookie-parser');
+
+// const swaggerUi = require('swagger-ui-express');
 
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
@@ -20,6 +23,18 @@ const viewRouter = require('./routes/viewRoutes');
 
 const app = express();
 
+app.use(
+  cors({
+    origin: 'http://127.0.0.1:3000',
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    allowedHeaders: 'Content-Type, Authorization',
+    credentials: true,
+    // methods: 'GET,POST,PUT,DELETE',
+    // allowedHeaders: ['Authorization', 'Content-Type'],
+    // origin: true,
+  }),
+);
+
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -29,15 +44,42 @@ app.use(express.static(path.join(__dirname, 'public'))); //serving static files 
 
 // Further helmet configuration for Security Policy (CSP)
 
-app.use(
-  cors({
-    credentials: true,
-    origin: true,
-    allowedHeaders: ['Authorization', 'Content-Type'],
-  }),
-);
+// app.options(
+//   '*',
+//   cors({
+//     origin: 'http://127.0.0.1:3000',
+//     credentials: true,
+//   }),
+// );
+// app.all('*', (req, res, next) => {
+//   // HEADER OPTIONS
+//   res.header('Access-Control-Allow-Origin', 'http://127.0.0.1:3000');
+//   res.header('Access-Control-Allow-Origin', '*'); ///not recommended tho, but for development!
+//   res.header('Access-Control-Allow-Credentials', 'true');
+//   res.header('Access-Control-Allow-Methods', 'DELETE, POST, GET, OPTIONS');
+//   res.header(
+//     'Access-Control-Allow-Headers',
+//     'Accept, X-Requested-With, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization',
+//   );
+//   // ////////////////
+//   next();
+// });
 
-app.options('*', cors());
+// const allowedOrigins = ['http://127.0.0.1:3000', 'http://localhost:3000'];
+// app.use(
+//   cors({
+//     origin: (origin, callback) => {
+//       if (allowedOrigins.includes(origin) || !origin) {
+//         callback(null, true);
+//       } else {
+//         callback(new Error('Not allowed by Cors'));
+//       }
+//     },
+//     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+//     credentials: true,
+//     allowedHeaders: ['Authorization', 'Content-Type'],
+//   }),
+// );
 
 // Generate nonce
 // app.use((req, res, next) => {
@@ -68,45 +110,62 @@ const connectSrcUrls = [
 ];
 const fontSrcUrls = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 
+// app.use(
+//   helmet.contentSecurityPolicy({
+//     directives: {
+//       defaultSrc: ["'self'", 'https:', 'http:', 'data:', 'ws:'],
+//       baseUri: ["'self'"],
+//       fontSrc: ["'self'", 'https:', 'http:', 'data:'],
+//       scriptSrc: ["'self'", 'https:', 'http:', 'blob:'],
+//       styleSrc: ["'self'", "'unsafe-inline'", 'https:', 'http:'],
+//     },
+//   }),
+// );
 app.use(helmet());
+app.use(helmet.dnsPrefetchControl());
+app.use(helmet.frameguard());
+app.use(helmet.hidePoweredBy());
+app.use(helmet.hsts());
+app.use(helmet.ieNoOpen());
+app.use(helmet.noSniff());
+app.use(helmet.originAgentCluster());
+app.use(helmet.permittedCrossDomainPolicies());
+app.use(helmet.referrerPolicy());
+app.use(helmet.xssFilter());
 app.use(
   helmet.contentSecurityPolicy({
-    useDefaults: true,
     directives: {
-      defaultSrc: ["'self'"],
-      baseUrl: ["'self'"],
-      connectSrc: ["'self'", ...connectSrcUrls],
-      scriptSrc: [
+      'child-src': ['blob:'],
+      'connect-src': [
+        // 'https://www.openstreetmap.org',
+        'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+        'https://*.cloudflare.com',
+        'http://127.0.0.1:3000',
+      ],
+      'default-src': ["'self'"],
+      'font-src': ["'self'", 'https://fonts.gstatic.com'],
+      'img-src': [
+        "'self'",
+        'data:',
+        'blob:',
+        'https://*.openstreetmap.org',
+        'https://unpkg.com',
+      ],
+      'script-src': [
         "'self'",
         "'unsafe-inline'",
-        // `'nonce-${res.locals.nonce}'`, //Dynamically apply nonce to inline scripts
-        ...scriptSrcUrls,
-      ],
+        'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
 
-      styleSrc: ["'self'", "'unsafe-inline'", ...styleSrcUrls],
-      workerSrc: [
-        "'self'",
-        'blob:',
+        // 'https://www.openstreetmap.org',
+        'https://unpkg.com',
+        'https://*.cloudflare.com',
         'http://127.0.0.1:3000',
-        'https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.7/axios.min.js',
-
-        // 'https://cdnjs.cloudflare.com',
-        'https://tile.openstreetmap.org',
       ],
-      objectSrc: [],
-      imgSrc: ["'self'", 'blob:', 'data', 'https:'],
-      fontSrc: ["'self'", ...fontSrcUrls],
+      'style-src': ["'self'", "'unsafe-inline'", 'https:'],
+      'worker-src': ['blob:'],
     },
   }),
 );
-
-// app.use(
-//   cors({
-//     origin: 'http://127.0.0.1:3000/api/v1', //Frontend domain?
-//     credentials: true,
-//     allowedHeaders: ['Authorization', 'Content-Type'],
-//   }),
-// );
 
 // Development logging
 if (process.env.NODE_ENV === 'development') {
@@ -159,7 +218,7 @@ app.use(
 //Test middleware
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
-  console.log(req.cookies);
+  console.log('Request Cookies:', req.cookies);
   next(); //always call next
 });
 
