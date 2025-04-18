@@ -16,9 +16,9 @@ const login = async (email, password) => {
         password,
       },
       withCredentials: true,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      // headers: {
+      //   'Content-Type': 'application/json',
+      // },
     });
 
     if (res.data.status === 'success') {
