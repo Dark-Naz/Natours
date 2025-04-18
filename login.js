@@ -15,7 +15,7 @@ const login = async (email, password) => {
         email,
         password,
       },
-      withCredentials: true,
+      // withCredentials: true,
       // headers: {
       //   'Content-Type': 'application/json',
       // },
