@@ -1,5 +1,5 @@
 /* eslint-disable */
-// import axios from 'axios';
+import axios from 'axios';
 import { showAlert } from './alerts';
 
 const baseUrl = 'http://127.0.0.1:3000';
@@ -33,5 +33,17 @@ export const login = async (email, password) => {
     // console.error('Error:', err.response.data || err.message);
     // console.log(res.data);
     showAlert('error', err.response.data.message);
+  }
+};
+
+export const logout = async () => {
+  try {
+    const res = await axios({
+      method: 'GET',
+      url: `${baseUrl}${api}/users/logout`,
+    });
+    if ((res.data.status = 'success')) locstion.reload(true);
+  } catch (err) {
+    showAlert('error', 'Error loggin out! Try again.');
   }
 };
