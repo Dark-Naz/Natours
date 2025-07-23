@@ -2,7 +2,6 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
-// lisa password = $2a$12$uA9FsDw63v6dkJKGlLQ/8ufYBs8euB7kqIQewyYlZXU5azEKeLEky
 
 // name, email, photo, password, passwordConfirm
 
@@ -18,7 +17,10 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     validate: [validator.isEmail, 'Please provide a valid email address'],
   },
-  photo: String,
+  photo: {
+    type: String,
+    default: 'default.jpg',
+  },
   role: {
     type: String,
     enum: ['user', 'admin', 'lead-guide', 'guide'],
