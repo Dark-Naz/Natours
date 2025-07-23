@@ -19,13 +19,14 @@ const globalErrorHandler = require('./controllers/errorController');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
+const bookingRouter = require('./routes/bookingRoutes');
 const viewRouter = require('./routes/viewRoutes');
 
 const app = express();
 
 app.use(
   cors({
-    origin: 'http://127.0.0.1:3000',
+    origin: ['http://127.0.0.1:3000', 'http://localhost:3000'],
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     allowedHeaders: 'Content-Type, Authorization',
     credentials: true,
@@ -88,7 +89,7 @@ app.use(express.static(path.join(__dirname, 'public'))); //serving static files 
 //   next();
 // });
 
-// Allowed sources for varios assets
+// Allowed sources for various assets
 const scriptSrcUrls = [
   'https://unpkg.com/',
   'https://tile.openstreetmap.org',
@@ -140,9 +141,12 @@ app.use(
         // 'https://www.openstreetmap.org',
         'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
         'https://*.cloudflare.com',
+        'http://localhost:3000',
         'http://127.0.0.1:3000',
+        'ws://127.0.0.1:*',
+        'ws://localhost:1234/',
       ],
-      'default-src': ["'self'"],
+      'default-src': ["'self'", 'data:', 'blob', 'https', 'ws:'],
       'font-src': ["'self'", 'https://fonts.gstatic.com'],
       'img-src': [
         "'self'",
@@ -155,10 +159,10 @@ app.use(
         "'self'",
         "'unsafe-inline'",
         'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-
-        // 'https://www.openstreetmap.org',
+        'https://www.openstreetmap.org',
         'https://unpkg.com',
         'https://*.cloudflare.com',
+        'http://localhost:3000',
         'http://127.0.0.1:3000',
       ],
       'style-src': ["'self'", "'unsafe-inline'", 'https:'],
@@ -183,6 +187,7 @@ app.use('/api', limiter);
 
 // Body parser, reading requests from body to req.body
 app.use(express.json({ limit: '10kb' })); //
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
 
 // Data sanitization against NoSQL injection
@@ -242,6 +247,7 @@ app.use('/', viewRouter);
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/reviews', reviewRouter);
+app.use('api/v1/bookings', bookingRouter);
 
 app.all('*', (req, res, next) => {
   // res.status(404).json({
